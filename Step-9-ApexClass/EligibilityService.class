@@ -1,0 +1,70 @@
+public with sharing class EligibilityService {
+
+    // Wrapper class
+    public class EligibilityResult {
+        @AuraEnabled public Id jobApplicationId;
+        @AuraEnabled public Boolean isEligible;
+        @AuraEnabled public String message;
+    }
+
+    // Bulk-safe eligibility check
+    public static List<EligibilityResult> checkEligibility(
+        List<Job_Application__c> applications
+    ) {
+
+        List<EligibilityResult> results = new List<EligibilityResult>();
+
+        Set<Id> studentIds = new Set<Id>();
+        Set<Id> jobPostingIds = new Set<Id>();
+
+        // Collect IDs
+        for (Job_Application__c app : applications) {
+            if (app.Student__c != null) {
+                studentIds.add(app.Student__c);
+            }
+            if (app.Job_Posting__c != null) {
+                jobPostingIds.add(app.Job_Posting__c);
+            }
+        }
+
+        // Query Student Requests
+        Map<Id, Student_Request__c> studentMap = new Map<Id, Student_Request__c>(
+            [
+                SELECT CGPA__c, Course__c, Batch__c
+                FROM Student_Request__c
+                WHERE Id IN :studentIds
+            ]
+        );
+
+        // Query Job Postings
+        Map<Id, Job_Posting__c> jobMap = new Map<Id, Job_Posting__c>(
+            [
+                SELECT Eligibility_CGPA__c
+                FROM Job_Posting__c
+                WHERE Id IN :jobPostingIds
+            ]
+        );
+
+        // Apply eligibility logic
+        for (Job_Application__c app : applications) {
+
+            EligibilityResult res = new EligibilityResult();
+            res.jobApplicationId = app.Id;
+
+            Student_Request__c s = studentMap.get(app.Student__c);
+            Job_Posting__c j = jobMap.get(app.Job_Posting__c);
+
+            if (s != null && j != null && s.CGPA__c >= j.Eligibility_CGPA__c) {
+                res.isEligible = true;
+                res.message = 'Eligible';
+            } else {
+                res.isEligible = false;
+                res.message = 'Not Eligible';
+            }
+
+            results.add(res);
+        }
+
+        return results;
+    }
+}

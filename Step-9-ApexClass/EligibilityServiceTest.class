@@ -1,0 +1,49 @@
+@isTest
+public class EligibilityServiceTest {
+
+    @isTest
+    static void testEligibilityLogic() {
+
+        //  Company
+        Account acc = new Account(Name = 'Eligibility Test Co');
+        insert acc;
+
+        //  Job Posting Site (master-detail)
+        Job_Posting_Site__c site = new Job_Posting_Site__c();
+        insert site;
+
+        //  Job Posting
+        Job_Posting__c job = new Job_Posting__c(
+            Company__c = acc.Id,
+            Job_Posting_Site__c = site.Id,
+            Eligibility_CGPA__c = 7.0,
+            Job_Type__c = 'Internship'
+        );
+        insert job;
+
+        //  Student Request
+        Student_Request__c student = new Student_Request__c(
+            Email__c = 'eligible@student.com'
+        );
+        insert student;
+
+        //  Job Application
+        Job_Application__c app = new Job_Application__c(
+            Student__c = student.Id,
+            Job_Posting__c = job.Id
+        );
+        insert app;
+
+        //  CALL SERVICE CLASS DIRECTLY 
+        Test.startTest();
+        List<EligibilityService.EligibilityResult> results =
+            EligibilityService.checkEligibility(
+                new List<Job_Application__c>{ app }
+            );
+        Test.stopTest();
+
+        // Assertions
+        System.assertEquals(1, results.size());
+        System.assertEquals(true, results[0].isEligible);
+    }
+}

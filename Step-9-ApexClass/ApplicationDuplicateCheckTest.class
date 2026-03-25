@@ -1,0 +1,55 @@
+@isTest
+public class ApplicationDuplicateCheckTest {
+
+    @isTest
+    static void testDuplicateJobApplicationBlocked() {
+
+        // Company (Account)
+        Account acc = new Account(Name = 'Test Company');
+        insert acc;
+
+        //  Job Posting Site (Master-Detail parent)
+        Job_Posting_Site__c site = new Job_Posting_Site__c();
+        insert site;
+
+        // Job Posting (only writable required fields)
+        Job_Posting__c job = new Job_Posting__c(
+            Company__c = acc.Id,
+            Job_Posting_Site__c = site.Id,
+            Eligibility_CGPA__c = 7.0,
+            Job_Type__c = 'Internship'
+        );
+        insert job;
+
+        //  Student Request (DO NOT set Name – auto number)
+        Student_Request__c student = new Student_Request__c(
+            Email__c = 'test@student.com'
+        );
+        insert student;
+
+        //  First Job Application (Allowed)
+        Job_Application__c app1 = new Job_Application__c(
+            Student__c = student.Id,
+            Job_Posting__c = job.Id
+        );
+        insert app1;
+
+        //  Duplicate Job Application (Should FAIL)
+        Job_Application__c app2 = new Job_Application__c(
+            Student__c = student.Id,
+            Job_Posting__c = job.Id
+        );
+
+        Test.startTest();
+        try {
+            insert app2;
+            System.assert(false, 'Duplicate job application should not be allowed');
+        } catch (DmlException e) {
+            System.assert(
+                e.getMessage().contains('already'),
+                'Expected duplicate application error'
+            );
+        }
+        Test.stopTest();
+    }
+}

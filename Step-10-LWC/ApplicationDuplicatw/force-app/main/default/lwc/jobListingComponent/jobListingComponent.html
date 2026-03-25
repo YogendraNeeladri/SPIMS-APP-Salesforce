@@ -1,0 +1,17 @@
+<template>
+    <lightning-card title="Available Jobs">
+        <template if:true={jobs.data}>
+            <template for:each={jobs.data} for:item="job">
+                <div key={job.Id} class="slds-box slds-m-around_small">
+                    <p><b>{job.Name}</b></p>
+                    <p>Min CGPA: {job.Eligibility_CGPA__c}</p>
+                    <lightning-button
+                        label="Apply"
+                        variant="brand"
+                        class="slds-m-top_small">
+                    </lightning-button>
+                </div>
+            </template>
+        </template>
+    </lightning-card>
+</template>

@@ -1,0 +1,33 @@
+public with sharing class EligibilityInvocable {
+
+    // Input wrapper for Flow
+    public class Request {
+        @InvocableVariable(required=true)
+        public Id jobApplicationId;
+    }
+
+    @InvocableMethod(label='Check Application Eligibility')
+    public static void invokeEligibility(List<Request> requests) {
+
+        // Collect Job Application IDs safely
+        Set<Id> appIds = new Set<Id>();
+        for (Request r : requests) {
+            if (r.jobApplicationId != null) {
+                appIds.add(r.jobApplicationId);
+            }
+        }
+
+        // Query Job Applications
+        List<Job_Application__c> applications = [
+            SELECT Id, Student__c, Job_Posting__c
+            FROM Job_Application__c
+            WHERE Id IN :appIds
+        ];
+
+        // Call Eligibility Service (business logic layer)
+        EligibilityService.checkEligibility(applications);
+
+        // No return & no update needed for Invocable Apex
+        // Flow can handle decision logic if required
+    }
+}
